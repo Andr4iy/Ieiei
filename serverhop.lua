@@ -1,58 +1,54 @@
-local success, Library = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-end)
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("Lennze Hub | Blox Fruits", "DarkScene")
 
-if not success then
-    warn("Не вдалося завантажити UI бібліотеку")
-    return
-end
+-- Tabs
+local Misc = Window:NewTab("Misc")
+local MiscSection = Misc:NewSection("Settings")
 
--- Спробуємо "Light" тему або взагалі без теми, якщо "DarkScene" видає помилку
-local Window = Library.CreateLib("Server Joiner", "Light")
-
-local Main = Window:NewTab("Server")
-local Section = Main:NewSection("Auto Joiner")
-
-Section:NewButton("Server Hop", "Перейти на інший сервер", function()
+MiscSection:NewButton("Server Hop", "Join another server", function()
     local PlaceID = game.PlaceId
     local AllIDs = {}
     local foundAnything = ""
-    
-    local function TPReturner()
+    local actualHour = os.date("!*t").hour
+    local Deleted = false
+    function TPReturner()
         local Site;
-        local url = 'https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'
-        if foundAnything ~= "" then
-            url = url .. '&cursor=' .. foundAnything
+        if foundAnything == "" then
+            Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
+        else
+            Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
         end
-        
-        local success, result = pcall(function()
-            return game:HttpGet(url)
-        end)
-        
-        if success then
-            local data = game.HttpService:JSONDecode(result)
-            if data.nextPageCursor and data.nextPageCursor ~= "null" then
-                foundAnything = data.nextPageCursor
-            end
-            
-            for i, v in pairs(data.data) do
-                if tostring(v.id) ~= tostring(game.JobId) then
-                    if tonumber(v.playing) < tonumber(v.maxPlayers) then
-                        table.insert(AllIDs, v.id)
-                    end
+        local ID = ""
+        if Site.nextPageCursor and Site.nextPageCursor ~= "null" and Site.nextPageCursor ~= nil then
+            foundAnything = Site.nextPageCursor
+        end
+        local num = 0;
+        for i,v in pairs(Site.data) do
+            ID = tostring(v.id)
+            if tonumber(v.playing) < tonumber(v.maxPlayers) then
+                local t = true
+                if not t then
+                else
+                    table.insert(AllIDs, ID)
+                    wait()
                 end
             end
         end
     end
 
-    local function Teleport()
-        TPReturner()
-        if #AllIDs > 0 then
-            game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, AllIDs[math.random(1, #AllIDs)], game.Players.LocalPlayer)
-        else
-            warn("Доступних серверів не знайдено")
+    function Teleport()
+        while wait() do
+            pcall(function()
+                TPReturner()
+                if ("" ~= "") then
+                    if #AllIDs > 0 then
+                        game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, AllIDs[math.random(1, #AllIDs)], game.Players.LocalPlayer)
+                    end
+                else
+                    game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, AllIDs[math.random(1, #AllIDs)], game.Players.LocalPlayer)
+                end
+            end)
         end
     end
-    
     Teleport()
 end)
